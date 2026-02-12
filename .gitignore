@@ -1,0 +1,17 @@
+# Outputs / reports
+out/
+*.csv
+*.json
+*.log
+
+# Local / OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Secrets (por si acaso)
+.env
+.env.*
