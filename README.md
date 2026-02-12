@@ -1,191 +1,282 @@
 # AWS FinOps Sentinel 🛡️
 
 ![AWS](https://img.shields.io/badge/AWS-CostExplorer-orange)
-![Mode](https://img.shields.io/badge/Mode-ReadOnly-green)
-![FinOps](https://img.shields.io/badge/FinOps-Forensics-blue)
+![Mode](https://img.shields.io/badge/Mode-SoloLectura-green)
+![FinOps](https://img.shields.io/badge/FinOps-Gobernanza-blue)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
+![Version](https://img.shields.io/badge/version-v1.1.0-blue)
 
-### Zero-Cost / Cost Forensics Toolkit for AWS
+## Capa Ligera de Gobernanza FinOps para AWS
 
-Toolkit de scripts **100% no destructivos** para auditar costos en AWS usando **Cost Explorer** y detectar:
+AWS FinOps Sentinel es una **capa ligera de gobernanza financiera (solo lectura)** diseñada para proporcionar visibilidad, análisis forense y control proactivo de costos en entornos AWS.
 
-- Picos inesperados
-- Gasto diario real
-- Servicios dominantes
-- UsageTypes técnicos (forense)
-- Proyección mensual (forecast)
-- Anomalías (>3x promedio)
+No es solo un conjunto de scripts.  
+Es un enfoque práctico de **FinOps aplicado a ingeniería real**.
+
+**Diseñado por un Cloud Architect con experiencia en gobernanza, seguridad ISO 27001 y control FinOps en entornos productivos.**
 
 ---
 
-## 🎯 Objetivo
+## 🏢 Posicionamiento Empresarial
 
-Este proyecto nace para resolver una pregunta muy común en Cloud:
+Este proyecto puede utilizarse como:
+
+- 🔍 Motor de análisis forense de costos
+- 🚨 Sistema temprano de detección de anomalías
+- 💰 Mecanismo de control presupuestario
+- 🧠 Capa de validación financiera en CI/CD
+- 📊 Componente de gobernanza cloud ligera
+
+Diseñado para equipos:
+
+- Cloud Engineering
+- Platform Engineering
+- DevOps / DevSecOps
+- FinOps
+- Arquitectura Empresarial
+
+---
+
+## 👥 Público Objetivo
+
+- Cloud Architects
+- FinOps Practitioners
+- Platform Engineers
+- CTOs en startups con control presupuestario limitado
+- Equipos DevOps que requieren validación financiera en pipeline
+
+---
+
+## 🎯 Problema que Resuelve
+
+En la mayoría de organizaciones, la visibilidad de costos es:
+
+- Reactiva
+- Dependiente de la Consola de Facturación
+- Limitada a dashboards agregados
+
+La pregunta crítica siempre aparece tarde:
 
 > "¿De dónde salió este gasto?"
 
-Permite:
+FinOps Sentinel permite:
 
-- Identificar **qué día exacto** comenzó el gasto
+- Identificar el **día exacto** donde comenzó el consumo
 - Detectar el **servicio responsable**
-- Ver el **origen técnico (UsageType)**
-- Estimar cierre mensual
+- Analizar el **origen técnico (UsageType)**
+- Estimar cierre mensual proyectado
 - Validar limpieza post-destrucción de infraestructura
+
+---
+
+## 🧠 Enfoque Arquitectónico
+```
+Ingeniero / Pipeline CI
+       ↓
+FinOps Sentinel Layer
+       ↓
+AWS Cost Explorer API
+       ↓
+Decisión de Gobernanza
+```
+
+No requiere agentes.
+No modifica recursos.
+No accede a infraestructura.
+Opera 100% en modo lectura.
 
 ---
 
 ## 🧩 Cómo Funciona
 
-El toolkit utiliza la API de AWS Cost Explorer (`ce:GetCostAndUsage`) para:
+Utiliza la API `ce:GetCostAndUsage` de AWS Cost Explorer para:
 
 1. Extraer costos diarios.
 2. Agrupar por servicio.
-3. Analizar UsageTypes.
-4. Detectar anomalías relativas.
+3. Analizar UsageTypes (nivel técnico).
+4. Detectar anomalías relativas (>3x promedio).
 5. Calcular forecast mensual.
-
-No utiliza CloudWatch, Billing Console scraping ni requiere agentes.
+6. Evaluar riesgo presupuestario (Budget Guard).
 
 ---
 
-## 📦 Scripts incluidos
+## 📦 Componentes Incluidos
 
-### 1) `scripts/cost-daily-table.sh`
+### 1️⃣ cost-daily-table.sh
 
-Tabla diaria legible con 2 decimales:
+Auditoría diaria ligera.
 
-- Total del período
+Entrega:
+
+- Tabla diaria financiera (2 decimales)
 - Día con mayor gasto
-- Gasto de hoy
-- Clasificación visual (OK / MEDIO / ALTO)
+- Estado visual (OK / MEDIO / ALTO)
+- Detección de consumo actual
 
-**Uso:**
+Uso:
 ```bash
-bash scripts/cost-daily-table.sh
-
-# Rango personalizado:
-bash scripts/cost-daily-table.sh --start 2026-02-01 --end 2026-02-12
+./scripts/cost-daily-table.sh
+./scripts/cost-daily-table.sh --start 2026-02-01 --end 2026-02-12
 ```
 
-### 2) `scripts/finops-sentinel-enterprise.sh`
+### 2️⃣ finops-sentinel-enterprise.sh
 
-Auditoría FinOps Enterprise en un solo comando. Incluye:
+Motor principal de gobernanza.
+
+Incluye:
 
 - Tabla diaria
 - Resumen ejecutivo
 - Forecast mensual
 - Top servicios
-- Top UsageTypes (forense)
-- Detección automática de anomalías
-- Export CSV opcional
-- Budget guard opcional
-- Webhook opcional (Slack/Telegram)
+- Top UsageTypes (nivel técnico)
+- Comparación vs mes anterior
+- Score FinOps (0–100)
+- Budget Guard
+- Export CSV
+- Integración webhook
+- Modo silencioso para CI/CD
 
-**Uso básico:**
+Uso básico:
 ```bash
-bash scripts/finops-sentinel-enterprise.sh
-
-# Con barras ASCII y export CSV:
-bash scripts/finops-sentinel-enterprise.sh --bars --csv ./out
-
-# Con Budget Guard:
-bash scripts/finops-sentinel-enterprise.sh --budget 20 --guard forecast
+./scripts/finops-sentinel-enterprise.sh
 ```
 
-### 3) `scripts/lab-cost-stopwatch.sh`
+### 3️⃣ lab-cost-stopwatch.sh
 
-Cronómetro visual para laboratorios. Ideal para:
+Herramienta educativa para concientización de costos en laboratorios.
 
-- EKS labs
-- NAT Gateway tests
-- Load Balancer prácticas
-- Cualquier entorno que facture por hora
+Ideal para:
 
-**Uso:**
-```bash
-bash scripts/lab-cost-stopwatch.sh
-
-# Detener con: CTRL + C
-```
+- EKS
+- NAT Gateway
+- Load Balancers
+- Entornos efímeros
 
 ---
 
-## 🔐 Requisitos
-
-- AWS CLI v2 configurado
-- Permiso IAM mínimo: `ce:GetCostAndUsage` y `sts:GetCallerIdentity`
-
-**Verificación:**
+## 🚀 Demo Rápida (30 segundos)
 ```bash
 aws sts get-caller-identity
+
+./scripts/cost-daily-table.sh
+
+mkdir -p out
+./scripts/finops-sentinel-enterprise.sh --bars --csv out/daily.csv
 ```
 
-## 🚀 Quick Demo
+---
 
+## 🏗️ Escenarios Empresariales
+
+### Executive FinOps Review
 ```bash
-aws sts get-caller-identity
-bash scripts/cost-daily-table.sh
-mkdir -p out && bash scripts/finops-sentinel-enterprise.sh --bars --csv out/daily.csv
+./scripts/finops-sentinel-enterprise.sh \
+  --bars \
+  --score \
+  --compare-prev
+```
+
+Uso: comité financiero / revisión mensual.
+
+### Budget Early Warning System
+```bash
+./scripts/finops-sentinel-enterprise.sh \
+  --budget 1000 \
+  --guard forecast
+```
+
+Uso: control preventivo antes de cierre mensual.
+
+### CI/CD Financial Gate
+```bash
+./scripts/finops-sentinel-enterprise.sh \
+  --quiet \
+  --csv out/report.csv
+```
+
+Uso: paso de validación en pipeline.
+
+### Cost Incident Investigation Mode
+```bash
+./scripts/finops-sentinel-enterprise.sh \
+  --start 2026-01-01 \
+  --end 2026-01-31 \
+  --bars \
+  --compare-prev \
+  --score \
+  --show-account
+```
+
+Uso: análisis post-incidente.
 
 ---
 
-## ⚠️ Disclaimer
+## 🔐 Seguridad
 
-Este proyecto es únicamente para análisis y auditoría.
-No ejecuta acciones destructivas ni modifica recursos.
-El autor no se responsabiliza por decisiones de eliminación basadas en estos reportes.
-
----
-
-## 🛡️ Seguridad
-
-- Scripts **NO modifican recursos**
 - 100% modo lectura
-- Outputs (csv/json/log) excluidos vía `.gitignore`
-- No incluye credenciales
-- No almacena Account IDs
+- No modifica recursos
+- No requiere credenciales embebidas
+- Account ID oculto por defecto
+- Compatible con IAM de mínimo privilegio
 
-**Recomendación:** Usar inicialmente en cuentas de laboratorio o con perfiles dedicados.
+Permisos mínimos:
+
+- `ce:GetCostAndUsage`
+- `sts:GetCallerIdentity`
 
 ---
 
-## 📈 Casos de Uso Reales
+## 📈 Casos Reales de Aplicación
 
-- Validación post-destrucción de infraestructura
+- Validación post-destrucción de EKS
 - Detección de NAT Gateways olvidados
-- Identificación de EKS control plane activos
-- Investigación de picos en AWS Budgets
-- Auditoría FinOps mensual
+- Identificación de control plane activo
+- Auditoría mensual de consumo
+- Gobernanza financiera ligera en startups y scale-ups
 
 ---
 
-## 🏗 Arquitectura Técnica
+## ⚙️ Limitaciones Técnicas
 
-El toolkit se basa exclusivamente en:
+- Depende de AWS Cost Explorer (datos con retraso de hasta 24h)
+- No reemplaza AWS Budgets ni herramientas SaaS FinOps
+- No ejecuta remediación automática
+- No realiza análisis avanzado de tagging
 
-- AWS Cost Explorer API
-- CLI nativa de AWS
-- Procesamiento local con bash + awk
+---
 
-No requiere:
-- Agentes
-- CloudWatch scraping
-- SDK externos
-- Infraestructura adicional
+## 🛣️ Roadmap (Visión Evolutiva)
 
-Diseñado para ser portable, minimalista y seguro.
+Posibles extensiones futuras:
+
+- Integración con AWS Budgets API
+- Export JSON estructurado para SIEM / Data Lake
+- Tag-based cost analysis
+- Multi-account aggregation
+- Versión Dockerizada
+- GitHub Action oficial
+
+---
+
+## ⚠️ Aviso
+
+Este proyecto es una herramienta de análisis.
+No ejecuta acciones destructivas.
+No reemplaza una plataforma FinOps completa.
+
+---
+
+## 👨‍💻 Autor
+
+**Jose Garagorry**  
+Cloud Architect | DevSecOps | FinOps Strategy
+
+- LinkedIn: https://www.linkedin.com/in/jgaragorry/
+- GitHub: https://github.com/jgaragorry/
+
 ---
 
 ## 📄 Licencia
 
 MIT License
-
----
-
-## 🤝 Autor
-
-**Jose Garagorry**  
-Cloud / DevSecOps / FinOps Engineer
-
-- LinkedIn: https://www.linkedin.com/in/jgaragorry/
-- GitHub: https://github.com/jgaragorry/
