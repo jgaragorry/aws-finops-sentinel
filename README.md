@@ -4,7 +4,7 @@
 ![Mode](https://img.shields.io/badge/Mode-SoloLectura-green)
 ![FinOps](https://img.shields.io/badge/FinOps-Gobernanza-blue)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
-![Version](https://img.shields.io/badge/version-v1.1.0-blue)
+![Version](https://img.shields.io/badge/version-v1.2.0-blue)
 
 ## Capa Ligera de Gobernanza FinOps para AWS
 
