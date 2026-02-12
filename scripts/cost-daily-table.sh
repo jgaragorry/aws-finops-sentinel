@@ -7,10 +7,10 @@ set -Eeuo pipefail
 #
 # 📌 DESCRIPCIÓN
 # -----------------------------------------------------------------------------
-# Este script realiza un análisis diario de costos en AWS usando Cost Explorer.
+# Análisis diario de costos AWS usando Cost Explorer.
 #
 # Muestra:
-#   - Costo por día (formato financiero 2 decimales)
+#   - Costo por día (2 decimales)
 #   - Total del período
 #   - Día con mayor gasto
 #   - Gasto del día actual
@@ -20,62 +20,54 @@ set -Eeuo pipefail
 # 🧠 OBJETIVO
 # -----------------------------------------------------------------------------
 # Detectar:
-#   - Días con gasto anormal
+#   - Picos anormales
 #   - Si hoy se está generando gasto
-#   - Tendencia de consumo
-#
-# Ideal para:
-#   - Auditoría FinOps mensual
-#   - Validación post-limpieza de infraestructura
-#   - Troubleshooting de facturación inesperada
+#   - Tendencia mensual
 #
 # -----------------------------------------------------------------------------
-# 📅 RANGO DE ANÁLISIS
+# 📅 RANGO
 # -----------------------------------------------------------------------------
-# Por defecto:
-#   START = primer día del mes actual
-#   END   = fecha actual (día ejecución)
-#
-# Se puede definir manualmente:
-#
-#   ./aws-cost-daily-audit.sh --start 2026-01-01 --end 2026-02-11
+# Default:
+#   --start = primer día del mes actual
+#   --end   = hoy
 #
 # -----------------------------------------------------------------------------
 # 🔐 REQUISITOS
 # -----------------------------------------------------------------------------
-# - AWS CLI v2 configurado
-# - Permiso IAM:
-#       ce:GetCostAndUsage
-#
-# Validación previa:
-#   aws sts get-caller-identity
+# - AWS CLI v2
+# - Permiso: ce:GetCostAndUsage
 #
 # -----------------------------------------------------------------------------
-# 📊 INTERPRETACIÓN DE ESTADO
+# 🛡 SEGURIDAD
 # -----------------------------------------------------------------------------
-# 🔥 ALTO   -> > 0.50 USD
-# ⚠️  MEDIO -> > 0.01 USD
-# OK        -> Gasto despreciable o cero
-#
-# -----------------------------------------------------------------------------
-# 🛡️ SEGURIDAD
-# -----------------------------------------------------------------------------
-# Script 100% no destructivo.
-# Solo consulta datos.
+# - 100% modo lectura
+# - No modifica recursos
+# - Account ID oculto por defecto
 # =============================================================================
 
 START_DATE="$(date +%Y-%m-01)"
 END_DATE="$(date +%Y-%m-%d)"
+SHOW_ACCOUNT=0
+
+usage() {
+  echo "Uso: $0 [--start YYYY-MM-DD] [--end YYYY-MM-DD] [--show-account]"
+  exit 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --start) START_DATE="$2"; shift 2;;
-    --end)   END_DATE="$2"; shift 2;;
-    *) echo "Uso: $0 [--start YYYY-MM-DD] [--end YYYY-MM-DD]"; exit 1;;
+    --start) START_DATE="${2:-}"; shift 2;;
+    --end)   END_DATE="${2:-}"; shift 2;;
+    --show-account) SHOW_ACCOUNT=1; shift;;
+    *) usage;;
   esac
 done
 
-ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+if [[ "$SHOW_ACCOUNT" -eq 1 ]]; then
+  ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+else
+  ACCOUNT_ID="(oculta)"
+fi
 
 echo ""
 echo "🔎 AWS DAILY COST FORENSIC AUDIT"
@@ -100,15 +92,16 @@ printf "\n%-15s | %-10s | %s\n" "FECHA" "USD" "ESTADO"
 printf "%s\n" "---------------------------------------------------------------"
 
 while read -r DATE VALUE; do
-  VALUE_CLEAN=$(printf "%.2f" "$VALUE")
+  [[ -z "${DATE:-}" ]] && continue
 
-  TOTAL=$(awk "BEGIN {print $TOTAL + $VALUE_CLEAN}")
+  VALUE_CLEAN=$(printf "%.2f" "$VALUE")
+  TOTAL=$(awk -v t="$TOTAL" -v v="$VALUE_CLEAN" 'BEGIN{printf "%.2f", t+v}')
 
   FLAG="OK"
 
-  if awk "BEGIN {exit !($VALUE_CLEAN > 0.50)}"; then
+  if awk -v v="$VALUE_CLEAN" 'BEGIN{exit !(v>0.50)}'; then
     FLAG="🔥 ALTO"
-  elif awk "BEGIN {exit !($VALUE_CLEAN > 0.01)}"; then
+  elif awk -v v="$VALUE_CLEAN" 'BEGIN{exit !(v>0.01)}'; then
     FLAG="⚠️  MEDIO"
   fi
 
@@ -116,7 +109,7 @@ while read -r DATE VALUE; do
     TODAY_VALUE="$VALUE_CLEAN"
   fi
 
-  if awk "BEGIN {exit !($VALUE_CLEAN > $MAX_VALUE)}"; then
+  if awk -v v="$VALUE_CLEAN" -v m="$MAX_VALUE" 'BEGIN{exit !(v>m)}'; then
     MAX_VALUE="$VALUE_CLEAN"
     MAX_DAY="$DATE"
   fi
@@ -127,10 +120,10 @@ done <<< "$DATA"
 
 echo "======================================================================="
 printf "💰 TOTAL PERIODO: %.2f USD\n" "$TOTAL"
-echo "📅 Día con mayor gasto: $MAX_DAY → $MAX_VALUE USD"
-echo "📆 Gasto hoy ($TODAY): $TODAY_VALUE USD"
+echo "📅 Día con mayor gasto: ${MAX_DAY:-N/A} → $MAX_VALUE USD"
+echo "📆 Gasto hoy ($TODAY): ${TODAY_VALUE:-0.00} USD"
 
-if awk "BEGIN {exit !($TODAY_VALUE > 0.01)}"; then
+if awk -v v="${TODAY_VALUE:-0}" 'BEGIN{exit !(v>0.01)}'; then
   echo "⚠️  ALERTA: Hoy se está generando gasto."
 else
   echo "✅ Hoy no hay gasto relevante."
