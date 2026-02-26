@@ -2,24 +2,21 @@
 set -Eeuo pipefail
 
 # =============================================================================
-# 📦 S3 STORAGE LIFECYCLE AUDITOR (FinOps Edition)
+# 📦 S3 STORAGE & INFRA-STATE AUDITOR (FinOps Edition)
 # =============================================================================
 # 📌 DESCRIPCIÓN:
 #    Escanea todos los buckets S3 de la cuenta para verificar:
 #    1. Existencia de Lifecycle Configuration (Crucial para ahorro).
-#    2. Estado del Versionamiento (Puede duplicar costos si no se gestiona).
+#    2. Estado del Versionamiento (Protección de datos y control de costos).
+#    3. [ANEXO] Integridad de Infraestructura (Específico para Terraform State).
 #
 # 🚀 OBJETIVO FINOPS:
-#    Identificar buckets que crecen indefinidamente sin reglas de transición
-#    a clases más baratas (Glacier) o borrado automático de temporales.
+#    - Identificar buckets que crecen indefinidamente (Falta de Lifecycle).
+#    - [NUEVO] Garantizar que los buckets de ESTADO (TFSTATE) sean resilientes.
 #
-# 🛠 REQUISITOS:
-#    - AWS CLI v2.
-#    - Permisos: s3:ListAllMyBuckets, s3:GetLifecycleConfiguration.
-#
-# 📖 USO:
-#    ./s3-storage-audit.sh          -> Ejecución completa.
-#    ./s3-storage-audit.sh --help   -> Muestra esta ayuda.
+# 📊 QUÉ OBTIENES:
+#    Una matriz de cumplimiento que separa el almacenamiento común del 
+#    almacenamiento crítico de infraestructura.
 #
 # 🛡 SEGURIDAD:
 #    - 100% IDEMPOTENTE y READ-ONLY.
@@ -30,7 +27,6 @@ usage() {
     exit 0
 }
 
-# 1. Soporte para ayuda --help
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
     usage
 fi
@@ -51,26 +47,38 @@ if [[ -z "$BUCKETS" || "$BUCKETS" == "None" ]]; then
     exit 0
 fi
 
-# 4. Cabecera de tabla si existen buckets
-printf "%-40s | %-12s | %-12s\n" "NOMBRE DEL BUCKET" "VERSIONING" "LIFECYCLE"
-echo "--------------------------------------------------------------------------------"
+# 4. Cabecera de tabla
+# [MEJORA]: Añadimos columna de "CRITICALITY" para diferenciar S3 normal de Infra
+printf "%-40s | %-12s | %-12s | %-12s\n" "NOMBRE DEL BUCKET" "VERSIONING" "LIFECYCLE" "TIPO/RIESGO"
+echo "---------------------------------------------------------------------------------------------------"
 
 for BUCKET in $BUCKETS; do
-    # 5. Verificar Versionamiento
+    # 5. Verificar Versionamiento (Original)
     VER=$(aws s3api get-bucket-versioning --bucket "$BUCKET" --query 'Status' --output text)
     [[ "$VER" == "None" ]] && VER="Disabled"
 
-    # 6. Verificar Lifecycle (Manejo de error si no existe)
+    # 6. Verificar Lifecycle (Original)
     LIFECYCLE="✅ ACTIVE"
     if ! aws s3api get-bucket-lifecycle-configuration --bucket "$BUCKET" >/dev/null 2>&1; then
         LIFECYCLE="❌ MISSING"
     fi
 
-    printf "%-40s | %-12s | %-12s\n" "$BUCKET" "$VER" "$LIFECYCLE"
+    # 7. [ANEXO] Lógica de Certeza para Infraestructura
+    # Identificamos si es el bucket de Terraform State (tfstate)
+    TYPE="STANDARD"
+    if [[ "$BUCKET" == *"tfstate"* ]]; then
+        TYPE="🛠 INFRA"
+        # Si es de infra y no tiene versionamiento, marcamos RIESGO CRÍTICO
+        if [[ "$VER" != "Enabled" ]]; then
+            TYPE="🚨 RISK_TF"
+        fi
+    fi
+
+    printf "%-40s | %-12s | %-12s | %-12s\n" "$BUCKET" "$VER" "$LIFECYCLE" "$TYPE"
 done
 
 echo "================================================================"
 echo "💡 RECOMENDACIÓN FINOPS:"
-echo "Los buckets con 'LIFECYCLE: MISSING' deben ser revisados."
-echo "Sin reglas de ciclo de vida, el costo de almacenamiento nunca dejará de crecer."
+echo "1. Buckets con 'LIFECYCLE: MISSING' incrementan costos indefinidamente."
+echo "2. Buckets con 'TYPE: RISK_TF' pueden causar pérdida total de IaC si se borra un archivo."
 echo "================================================================"
